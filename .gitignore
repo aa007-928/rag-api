@@ -12,9 +12,6 @@ wheels/
 # DB
 db/
 
-# KB
-KB/
-
 # IDE
 .vscode/
 .idea/
