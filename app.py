@@ -1,17 +1,29 @@
 from fastapi import FastAPI
 import chromadb
-import ollama
 import uuid
+import os
+
+# Mock LLM mode for CI testing
+USE_MOCK_LLM = os.getenv("USE_MOCK_LLM", "0") == "1"
+if not USE_MOCK_LLM:
+    import ollama
+    #ollama_client = ollama.Client(host="http://host.docker.internal:11434")
+    ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    ollama_client = ollama.Client(host=ollama_host)
 
 app = FastAPI()
 chroma = chromadb.PersistentClient(path="./db")
 collection = chroma.get_or_create_collection("docs")
-ollama_client = ollama.Client(host="http://host.docker.internal:11434")
+
 
 @app.post("/query")
 def query(q: str):
     results = collection.query(query_texts=[q], n_results=1)
     context = results["documents"][0][0] if results["documents"] else ""
+
+    if USE_MOCK_LLM:
+        # In mock mode, return the retrieved context directly
+        return {"answer": context}
 
     answer = ollama_client.generate(
         model="tinyllama",
